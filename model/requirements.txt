@@ -1,0 +1,5 @@
+pytest==7.1.1
+redis==4.1.4
+jsonschema==4.16.0
+xgboost==1.7.0
+scikit-learn==1.1.3
