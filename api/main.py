@@ -2,7 +2,7 @@ import uvicorn
 import json
 
 # Fast API utilities
-from fastapi import FastAPI, Request, Query, Form
+from fastapi import FastAPI, Request, Form, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -12,6 +12,7 @@ from middleware import model_predict
 
 # Pydantic utilities
 from pydantic import BaseModel, Field
+from pydantic.dataclasses import dataclass
 
 # Create API
 app = FastAPI()
@@ -23,34 +24,40 @@ templates = Jinja2Templates(directory="templates")
 
 #%% Models
 
-# Application
-class Application(BaseModel):
-    sex: str = Query("Male", enum=["Male", "Female", "Non Binary"])
 
+# Application
+@dataclass
+class Data:
+    sex: str = Form(...)
+    company: str = Form(...)
+
+    # q_cars = int = Field(...,
+    #                      ge=0)
 
 @app.get("/application", response_class=HTMLResponse)
-#@app.post("/application", response_class=HTMLResponse)
 async def application(request: Request,
-                #sex: str = Form(),
                 ):
 
-    # if request.method == "GET":
     return templates.TemplateResponse(name="index.html",
                                       context={
                                       "request": request,
-                                      "genders": ["M", "F"]
+                                      "genders": ["M", "F"],
+                                      "company": ["Y", "N"]
                                       })
 
-#    if request.method == "POST":
-@app.post("/score", response_class=HTMLResponse)
+@app.post("/score")#, response_class=HTMLResponse)
 async def score(request: Request,
-                sex: str = Form(),
+                form_data: Data = Depends(),
+                # sex: str = Form(),
+                # company: str = Form()
                 ):
+
+
     data = {
         'PAYMENT_DAY': 5,
         'APPLICATION_SUBMISSION_TYPE': 'Web',
         'POSTAL_ADDRESS_TYPE': 1,
-        'SEX': sex,
+        'SEX': form_data.sex,
         'MARITAL_STATUS': 2,
         'QUANT_DEPENDANTS': 4,
         'STATE_OF_BIRTH': 'RJ',
@@ -58,7 +65,11 @@ async def score(request: Request,
         'RESIDENCIAL_STATE': 'RJ',
         'FLAG_RESIDENCIAL_PHONE': 'Y',
         'RESIDENCIAL_PHONE_AREA_CODE': ' ',
-        'RESIDENCE_TYPE': None,
+        'RESIDENCE_TYPE': 3, #{1: "Owned",
+        #                    2: "Mortgage",
+        #                    3: "Rented",
+        #                    4: "Parents",
+        #                    5: "Family"},
         'MONTHS_IN_RESIDENCE': 54,
         'FLAG_EMAIL': 1,
         'PERSONAL_MONTHLY_INCOME': 1200,
@@ -71,7 +82,7 @@ async def score(request: Request,
         'QUANT_BANKING_ACCOUNTS': 2,
         'PERSONAL_ASSETS_VALUE': 0,
         'QUANT_CARS': 1,
-        'COMPANY': 'Y',
+        'COMPANY': form_data.company,
         'PROFESSIONAL_STATE': 'RJ',
         'FLAG_PROFESSIONAL_PHONE': 'N',
         'PROFESSIONAL_PHONE_AREA_CODE': 384,
