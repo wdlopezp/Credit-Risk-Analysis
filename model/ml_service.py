@@ -61,7 +61,7 @@ def predict(data):
     # Preprocess data
     data_df = data_df.convert_dtypes()
     # Remove Target variable from features
-    cat_features.remove('TARGET_LABEL_BAD=1')
+    # cat_features.remove('TARGET_LABEL_BAD=1')
     # Use the lists with categorical and numerical feature names
     for col in cat_features:
         # First to string
