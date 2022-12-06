@@ -1,5 +1,6 @@
 import uvicorn
 import json
+import os
 
 # Fast API utilities
 from fastapi import FastAPI, Request, Form, Depends
@@ -14,10 +15,18 @@ from middleware import model_predict
 from pydantic import BaseModel, Field
 from pydantic.dataclasses import dataclass
 
+from routers import auth
+from jose import jwt
+JWT_SECRET_KEY= os.environ['JWT_SECRET_KEY']
+ALGORITHM= os.environ['ALGORITHM']
+
 # Create API
 app = FastAPI(title="Credit Risk Analysis API",
               description="Final Project of the Machine Learning Engineer Program",
               version="1.0.1")
+
+# Include authentication router
+app.include_router(auth.router)
 
 # Define public directory
 app.mount("/static",StaticFiles(directory="./public/static"), name="static")
@@ -72,9 +81,21 @@ class Data:
     # product: str = Form(...)
     age: str = Form(...)
     residencial_zip_3: str = Form(...)
+    first_name: str = Form(...)
+    last_name: str = Form(...)    
 
+@app.post("/index", response_class=HTMLResponse)
 @app.get("/index", response_class=HTMLResponse)
-async def index(request: Request,):
+async def index(request: Request = Depends(auth.verify_user_token)):
+
+		
+    token= request.cookies.get('auth')
+    decoded_token= jwt.decode(
+        token= token,
+        key= JWT_SECRET_KEY,
+        algorithms= [ALGORITHM]
+    ) if token is not None else None
+    user= json.loads(decoded_token.get('sub').replace("\'", "\"")) if decoded_token is not None else decoded_token
 
     context = {
         "request": request,
@@ -92,6 +113,7 @@ async def index(request: Request,):
         "profession_code": data_index_attr['profession_code'],
         "occupation_type": data_index_attr['occupation_type'],
         "product": data_index_attr['product'],
+        "user_data": user
     }
 
 
@@ -144,19 +166,41 @@ async def score(request: Request,
         'AGE': form_data.age,
         'RESIDENCIAL_ZIP_3': form_data.residencial_zip_3,
     }
-
+    
     # Send job to ml_service and receive results
     prediction, score = model_predict(data)
+    
+    if 0 <= score <= 846: 
+        color = "#F50B0B"
+        type_client = "Very Low"
+    if 847 <= score <= 926: 
+        color = "#D25C5C" 
+        type_client = "Bass"
+    if 927 <= score <= 950: 
+        color = "#FFFF33" 
+        type_client = "Regular"
+    if 951 <= score <= 972: 
+        color = "#99FF99" 
+        type_client = "Okay"
+    if 973 <= score <= 1000: 
+        color = "#00CCCC" 
+        type_client = "Excellent"
+
     context = {
         "request": request,
         "prediction": prediction,
-        "score": score
-    }
+        "score": score/10,
+        "first_name":form_data.first_name,
+        "last_name":form_data.last_name,
+        "color": color        
+    }      
+
 
     # return {"Prediction": prediction, "Score": score}
     return templates.TemplateResponse(name="score.html",
                                       context=context
                                       )
+
 
 # if __name__ == "__main__":
 #     uvicorn.run("main:app", reload=True)

@@ -13,7 +13,8 @@ services:
     depends_on:
       - redis
       - model
-
+    volumes:
+      - ./api/app.db:/src/app.db
 
   redis:
     image: redis:6.2.6
