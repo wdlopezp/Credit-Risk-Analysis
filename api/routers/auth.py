@@ -200,7 +200,7 @@ async def check_signup_user(request: Request, form_data: Data = Depends()):
         conn.commit()
         response= RedirectResponse(url="/auth")
     else:
-        response= PlainTextResponse("Usuario ya existente", status_code= 400)
+        response= PlainTextResponse("User already exists", status_code= 400)
     conn.commit()
 
     return response

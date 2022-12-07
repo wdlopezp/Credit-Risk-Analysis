@@ -1,3 +1,5 @@
+from typing import Optional
+
 import uvicorn
 import json
 import os
@@ -76,13 +78,10 @@ class Data:
     flag_professional_phone: str = Form(...)
     professional_phone_area_code: str = Form(...)
     months_in_the_job: str = Form(...)
-    # profession_code: str = Form(...)
-    # occupation_type: str = Form(...)
-    # product: str = Form(...)
     age: str = Form(...)
     residencial_zip_3: str = Form(...)
-    first_name: str = Form(...)
-    last_name: str = Form(...)    
+    first_name: Optional[str] = Form()
+    last_name: Optional[str] = Form()
 
 @app.post("/index", response_class=HTMLResponse)
 @app.get("/index", response_class=HTMLResponse)
@@ -95,8 +94,9 @@ async def index(request: Request = Depends(auth.verify_user_token)):
         key= JWT_SECRET_KEY,
         algorithms= [ALGORITHM]
     ) if token is not None else None
-    user= json.loads(decoded_token.get('sub').replace("\'", "\"")) if decoded_token is not None else decoded_token
 
+    user= json.loads(decoded_token.get('sub').replace("\'", "\"")) if decoded_token is not None else decoded_token
+    print(user)
     context = {
         "request": request,
         "genders": data_index_attr['sex'],
@@ -157,16 +157,13 @@ async def score(request: Request,
         'FLAG_PROFESSIONAL_PHONE': form_data.flag_professional_phone,
         'PROFESSIONAL_PHONE_AREA_CODE': form_data.professional_phone_area_code,
         'MONTHS_IN_THE_JOB': form_data.months_in_the_job,
-        # 'PROFESSION_CODE': form_data.profession_code,
-        # 'OCCUPATION_TYPE': form_data.occupation_type,
-        # 'PRODUCT': form_data.product,
         'PROFESSION_CODE': None,
         'OCCUPATION_TYPE': None,
         'PRODUCT': None,
         'AGE': form_data.age,
         'RESIDENCIAL_ZIP_3': form_data.residencial_zip_3,
     }
-    
+
     # Send job to ml_service and receive results
     prediction, score = model_predict(data)
     
@@ -196,11 +193,6 @@ async def score(request: Request,
     }      
 
 
-    # return {"Prediction": prediction, "Score": score}
     return templates.TemplateResponse(name="score.html",
                                       context=context
                                       )
-
-
-# if __name__ == "__main__":
-#     uvicorn.run("main:app", reload=True)

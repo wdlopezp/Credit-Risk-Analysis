@@ -36,6 +36,7 @@ def model_predict(data):
     # We need to assign this ID because we must be able to keep track
     # of this particular job across all the services
     # TODO: Completed
+
     job_id = str(uuid4())
 
     # Create a dict with the job data we will send through Redis having the
