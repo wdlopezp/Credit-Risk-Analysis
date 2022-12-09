@@ -1,7 +1,5 @@
-from typing import Optional
 
-import uvicorn
-import json
+# Interact with OS
 import os
 
 # Fast API utilities
@@ -14,13 +12,17 @@ from fastapi.templating import Jinja2Templates
 from middleware import model_predict
 
 # Pydantic utilities
-from pydantic import BaseModel, Field
 from pydantic.dataclasses import dataclass
 
+# Authentication and encryption utilities
 from routers import auth
 from jose import jwt
 JWT_SECRET_KEY= os.environ['JWT_SECRET_KEY']
 ALGORITHM= os.environ['ALGORITHM']
+
+# Others
+from typing import Optional
+import json
 
 # Create API
 app = FastAPI(title="Credit Risk Analysis API",
@@ -39,14 +41,13 @@ templates = Jinja2Templates(directory="./public/templates")
 # Opening JSON file
 f = open('./public/static/json/index_attr.json')
 
-# returns JSON object as
-# a dictionary
+# Returns JSON object as a dictionary
 data_index_attr = json.load(f)
 
 #%% Models
 
 
-# Application
+# Application Form Data Class
 @dataclass
 class Data:
     sex: str = Form(...)
@@ -87,16 +88,18 @@ class Data:
 @app.get("/index", response_class=HTMLResponse)
 async def index(request: Request = Depends(auth.verify_user_token)):
 
-		
+    # Verify that the user is logged in by means of token
     token= request.cookies.get('auth')
     decoded_token= jwt.decode(
         token= token,
         key= JWT_SECRET_KEY,
         algorithms= [ALGORITHM]
+    # If it is not logged in, it redirects the user to an error message
     ) if token is not None else None
 
     user= json.loads(decoded_token.get('sub').replace("\'", "\"")) if decoded_token is not None else decoded_token
-    print(user)
+
+    # The data set is loaded from the json dictionary to be sent by get a registration form
     context = {
         "request": request,
         "genders": data_index_attr['sex'],
@@ -116,17 +119,17 @@ async def index(request: Request = Depends(auth.verify_user_token)):
         "user_data": user
     }
 
-
+    # It is redirected to the registration form
     return templates.TemplateResponse(name="index.html",
                                       context=context)
 
-
+# Post method published to obtain the data from the registration form and send it to the model service
 @app.post("/score")#, response_class=HTMLResponse)
 async def score(request: Request,
                 form_data: Data = Depends(),
                 ):
 
-
+    # The data is assembled to be sent in json format to the ml_service
     data = {
         'PAYMENT_DAY': form_data.payment_day,
         'APPLICATION_SUBMISSION_TYPE': form_data.application_submission_type,
@@ -166,7 +169,8 @@ async def score(request: Request,
 
     # Send job to ml_service and receive results
     prediction, score = model_predict(data)
-    
+
+    # The calculated score range is checked to select the correct color to plot
     if 0 <= score <= 846: 
         color = "#F50B0B"
         type_client = "Very Low"
@@ -183,6 +187,7 @@ async def score(request: Request,
         color = "#00CCCC" 
         type_client = "Excellent"
 
+    # Formatting of data to be sent to the score form
     context = {
         "request": request,
         "prediction": prediction,
@@ -190,9 +195,9 @@ async def score(request: Request,
         "first_name":form_data.first_name,
         "last_name":form_data.last_name,
         "color": color        
-    }      
+    }
 
-
+    # It is redirected to graph the score obtained by the applicant
     return templates.TemplateResponse(name="score.html",
                                       context=context
                                       )

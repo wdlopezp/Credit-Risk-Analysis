@@ -55,6 +55,7 @@ class TestIntegration(TestCase):
                         first_name="Jhon",
                         last_name="Doe"
         )
+        # Encode data as json so the service can understand it
         data = jsonable_encoder(form_data)
         pred_class = 1
         pred_score = 0.4770884
