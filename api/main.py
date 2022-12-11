@@ -4,7 +4,7 @@ import os
 
 # Fast API utilities
 from fastapi import FastAPI, Request, Form, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -83,6 +83,13 @@ class Data:
     residencial_zip_3: str = Form(...)
     first_name: Optional[str] = Form()
     last_name: Optional[str] = Form()
+
+# Endpoint to avoid 
+@app.get("/")
+async def redirect():
+    response = RedirectResponse(url="/auth")
+    return response
+
 
 @app.post("/index", response_class=HTMLResponse)
 @app.get("/index", response_class=HTMLResponse)
